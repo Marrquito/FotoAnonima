@@ -1,0 +1,52 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "MASM32 Assemble",
+            "type": "process",
+            "command": "C:\\masm32\\bin\\ml.exe",
+            "args": [
+                "/Fo${fileDirname}\\${fileBasenameNoExtension}.obj",
+                "/c",
+                "/Zd",
+                "/coff",
+                "${fileDirname}\\${fileBasenameNoExtension}.asm"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build"
+            }
+        },
+        {
+            "label": "MASM32 Link",
+            "type": "process",
+            "command": "C:\\masm32\\bin\\link.exe",
+            "args": [
+                "/SUBSYSTEM:CONSOLE",
+                "${fileDirname}\\${fileBasenameNoExtension}.obj",
+                "/OUT:${fileDirname}\\${fileBasenameNoExtension}.exe"
+            ],
+            "dependsOn": "MASM32 Assemble",
+            "dependsOrder": "sequence",
+            "group": {
+                "kind": "build"
+            }
+        },
+        {
+            "label": "Remove Obj File",
+            "type": "process",
+            "command": "rm",
+            "args": [
+                "${fileDirname}\\${fileBasenameNoExtension}.obj"
+            ],
+            "dependsOn": "MASM32 Link",
+            "dependsOrder": "sequence",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
