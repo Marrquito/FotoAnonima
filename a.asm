@@ -24,7 +24,10 @@ includelib \masm32\lib\masm32.lib
     fileBuffer 			    dd 6480  dup(0)
 
     tamanhoAux 				dd 0
-    headerSize 				dd 54
+    firstHeaderSize         dd 18
+    imageWidth              dd 4
+    secondHeaderSize        dd 32 
+
     pixelSize 				dd 3
     pixelArray 				db 3 dup(0)
 	
@@ -38,7 +41,7 @@ includelib \masm32\lib\masm32.lib
     inputString 			db 12 dup(0)
     
     msg 					db "valor digitado eh: ", 0h  
-	msg2 					db 10 dup(0)
+    imageWidthValuemsg		db "A largura da imagem eh: ", 0h  
 	
 .code
 start:
@@ -154,8 +157,22 @@ start:
     ;------------------------------------- 
 
 	;------------------------------------- lendo o arquivo original e gravando header no novo arquivo
-    invoke ReadFile, imgEntradaHandle, addr fileBuffer, headerSize, addr consoleCount, NULL
-    invoke WriteFile, imgSaidaHandle, addr fileBuffer, headerSize, addr consoleCount, NULL 
+    invoke ReadFile, imgEntradaHandle, addr fileBuffer, firstHeaderSize, addr consoleCount, NULL
+    invoke WriteFile, imgSaidaHandle, addr fileBuffer, firstHeaderSize, addr consoleCount, NULL
+
+    invoke ReadFile, imgEntradaHandle, addr imageWidth, 4, addr consoleCount, NULL
+    invoke WriteFile, imgSaidaHandle, addr imageWidth, 4, addr consoleCount, NULL
+
+    invoke dwtoa, imageWidth, addr inputString  
+    invoke StrLen, addr inputString  
+    mov tamanhoAux, eax
+    
+    invoke WriteConsole, outputHandle, addr imageWidthValuemsg, sizeof imageWidthValuemsg, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr inputString  , tamanhoAux, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
+
+    invoke ReadFile, imgEntradaHandle, addr fileBuffer, secondHeaderSize, addr consoleCount, NULL
+    invoke WriteFile, imgSaidaHandle, addr fileBuffer, secondHeaderSize, addr consoleCount, NULL
 	;-------------------------------------
 	
 	;------------------------------------- #TODO: implementar logica de leitura até
