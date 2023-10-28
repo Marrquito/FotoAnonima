@@ -8,6 +8,11 @@ include \masm32\include\kernel32.inc
 includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\masm32.lib
 
+; para usar macro do PRINTF *** APAGAR DEPOIS ***
+include \masm32\include\msvcrt.inc
+includelib \masm32\lib\msvcrt.lib
+include \masm32\macros\macros.asm
+
 .data
     newLine 				db 0Ah
     messageArquivoEntrada 	db "Qual o nome do arquivo principal?(max 15 caracteres): ", 0h
@@ -174,8 +179,23 @@ start:
     invoke ReadFile, imgEntradaHandle, addr fileBuffer, secondHeaderSize, addr consoleCount, NULL
     invoke WriteFile, imgSaidaHandle, addr fileBuffer, secondHeaderSize, addr consoleCount, NULL
 	;-------------------------------------
-	
-	;------------------------------------- #TODO: implementar logica de leitura até
+
+	;------------------------------------- leitura do restante dos bytes da imagem original
+    mov eax, imageWidth ; pegando o valor maximo de bytes da linha e guardando em imageWidth
+    mov ebx, pixelSize
+    mul ebx
+    mov imageWidth, eax
+
+    ler_linha: ; inicio loop para ler e escrever as linhas da imagem
+        invoke ReadFile, imgEntradaHandle, addr fileBuffer, imageWidth, addr consoleCount, NULL
+
+        cmp consoleCount, 0
+        jz fim_leitura
+
+        invoke WriteFile, imgSaidaHandle, addr fileBuffer, imageWidth, addr consoleCount, NULL
+
+        jnz ler_linha ; Continue o loop se ecx não for zero
+    fim_leitura:
 
 	;-------------------------------------
 	
