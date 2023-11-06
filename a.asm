@@ -17,14 +17,14 @@ include \masm32\macros\macros.asm
     newLine 				db 0Ah
     messageArquivoEntrada 	db "Qual o nome do arquivo principal?(max 15 caracteres): ", 0h
     messageArquivoSaida 	db "Qual o nome do arquivo de saida?(max 16 caracteres): ", 0h
-    messageXCoordenate 		db "Digite a coordenada X inicial para a sensura: ", 0h
-    messageYCoordenate 		db "Digite a coordenada Y inicial para a sensura: ", 0h
+    messageXCoordenate 		db "Digite a coordenada X inicial para a censura: ", 0h
+    messageYCoordenate 		db "Digite a coordenada Y inicial para a censura: ", 0h
     messageStripeWidth 		db "Digite a largura da tarja: ", 0h
     messageStripeHeight 	db "Digite a altura da tarja: ", 0h
     
-    xCoordenate 			dd 0 ; coordenada X para inicio da sensura
-    yCoordenate 			dd 0 ; coordenada Y para inicio da sensura
-    stripeWidth             dd 0 ; largura da sensura
+    xCoordenate 			dd 0 ; coordenada X para inicio da censura
+    yCoordenate 			dd 0 ; coordenada Y para inicio da censura
+    stripeWidth             dd 0 ; largura da censura
     stripeHeight            dd 0 ; altura da sengura
 
     imgName 			    db 17 dup(0) ; nome da imagem no diretorio
@@ -36,8 +36,12 @@ include \masm32\macros\macros.asm
     firstHeaderSize         dd 18
     imageWidth              dd 4
     secondHeaderSize        dd 32 
+    lineRead                dd 0
+    lineAux                 dd 0
 
     pixelSize 				dd 3
+    pixelWidth              dd 0
+    pixelHeight             dd 0
     pixelArray 				db 3 dup(0)
 	
     imgEntradaHandle 		dd 0 ; handle do arquivo original
@@ -53,6 +57,7 @@ include \masm32\macros\macros.asm
     imageWidthValuemsg		db "A largura da imagem eh: ", 0h  
 	
 .code
+
 start:
     ;------------------------------------- pegando handles de IO
     invoke GetStdHandle, STD_OUTPUT_HANDLE
@@ -244,15 +249,62 @@ start:
     mul ebx
     mov imageWidth, eax
 
-    ler_linha: ; inicio loop para ler e escrever as linhas da imagem
+    ; inicio da coordenada X * 3
+    mov eax, xCoordenate
+    mov ebx, pixelSize
+    mul ebx
+    mov pixelWidth, eax
+
+    ; largura da tarja * 3
+    mov eax, stripeWidth
+    mov ebx, pixelSize
+    mul ebx
+    mov stripeWidth, eax
+    
+    ; altura total da faixa (coordenada Y + altura da tarja)
+    mov eax, yCoordenate
+    add eax, stripeHeight
+    mov pixelHeight, eax
+
+    ; contador de linhas lidas
+    mov lineRead, 0
+    ler_linha:
         invoke ReadFile, imgEntradaHandle, addr fileBuffer, imageWidth, addr consoleCount, NULL
+        add lineRead, 1
+        mov ecx, lineRead
 
         cmp consoleCount, 0
         jz fim_leitura
 
-        invoke WriteFile, imgSaidaHandle, addr fileBuffer, imageWidth, addr consoleCount, NULL
+        cmp ecx, yCoordenate
+        jl linha_nao_censurada
 
-        jnz ler_linha ; Continue o loop se ecx não for zero
+        cmp ecx, pixelHeight
+        ja linha_nao_censurada
+
+        jmp linha_censurada
+
+        linha_censurada:
+            mov esi, pixelWidth ; coordenada inicial da tarja em ESI
+            mov edi, esi
+            add edi, stripeWidth ; coordenada final da tarja em EDI
+
+            zero_loop:
+                mov byte ptr [fileBuffer + esi], 0
+                inc esi
+
+                cmp esi, edi
+                jbe zero_loop
+
+            invoke WriteFile, imgSaidaHandle, addr fileBuffer, imageWidth, addr consoleCount, NULL
+            jnz ler_linha ; continua o loop se ecx não for zero
+
+        linha_nao_censurada:
+            ; Escreva a linha no arquivo de saída
+            invoke WriteFile, imgSaidaHandle, addr fileBuffer, imageWidth, addr consoleCount, NULL
+
+            jnz ler_linha ; continua o loop se ecx não for zero
+
     fim_leitura:
 
 	;-------------------------------------
