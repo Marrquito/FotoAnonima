@@ -37,12 +37,10 @@ include \masm32\macros\macros.asm
     imageWidth              dd 4
     secondHeaderSize        dd 32 
     lineRead                dd 0
-    lineAux                 dd 0
 
     pixelSize 				dd 3
     pixelWidth              dd 0
     pixelHeight             dd 0
-    pixelArray 				db 3 dup(0)
 	
     imgEntradaHandle 		dd 0 ; handle do arquivo original
     imgSaidaHandle		    dd 0 ; handle do arquivo novo
