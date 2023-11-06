@@ -19,10 +19,14 @@ include \masm32\macros\macros.asm
     messageArquivoSaida 	db "Qual o nome do arquivo de saida?(max 16 caracteres): ", 0h
     messageXCoordenate 		db "Digite a coordenada X inicial para a sensura: ", 0h
     messageYCoordenate 		db "Digite a coordenada Y inicial para a sensura: ", 0h
+    messageStripeWidth 		db "Digite a largura da tarja: ", 0h
+    messageStripeHeight 	db "Digite a altura da tarja: ", 0h
     
-    xCoordenate 			dd 0 ; cor a ser trocada
-    yCoordenate 			dd 0 ; valor a ser incrementado
-    
+    xCoordenate 			dd 0 ; coordenada X para inicio da sensura
+    yCoordenate 			dd 0 ; coordenada Y para inicio da sensura
+    stripeWidth             dd 0 ; largura da sensura
+    stripeHeight            dd 0 ; altura da sengura
+
     imgName 			    db 17 dup(0) ; nome da imagem no diretorio
     newImgName 			    db 18 dup(0) ; nome da imagem a ser gerada
     
@@ -62,14 +66,14 @@ start:
     invoke ReadConsole, inputHandle, addr inputString, sizeof inputString, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
     mov esi, offset inputString
-    proximo:
+    nextLoopCoordenateX:
         mov al, [esi]
         inc esi
         cmp al, 48
-        jl terminar
+        jl endLoopCoordenateX
         cmp al, 58
-        jl proximo
-    terminar:
+        jl nextLoopCoordenateX
+    endLoopCoordenateX:
         dec esi
         xor al, al
         mov [esi], al
@@ -88,14 +92,14 @@ start:
     invoke ReadConsole, inputHandle, addr inputString, sizeof inputString, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
     mov esi, offset inputString
-    proximo2:
+    nextLoopCoordenateY:
         mov al, [esi]
         inc esi
         cmp al, 48
-        jl terminar2
+        jl endLoopCoordenateY
         cmp al, 58
-        jl proximo2
-    terminar2:
+        jl nextLoopCoordenateY
+    endLoopCoordenateY:
         dec esi
         xor al, al
         mov [esi], al
@@ -103,6 +107,60 @@ start:
     invoke atodw, addr inputString
     mov yCoordenate, eax
     invoke dwtoa, yCoordenate, addr inputString
+    invoke StrLen, addr inputString
+    mov tamanhoAux, eax
+    
+    invoke WriteConsole, outputHandle, addr msg, sizeof msg, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr inputString, tamanhoAux, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
+
+
+    ; altura e largura
+    invoke WriteConsole, outputHandle, addr messageStripeWidth, sizeof messageStripeWidth, addr consoleCount, NULL
+    invoke ReadConsole, inputHandle, addr inputString, sizeof inputString, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
+    mov esi, offset inputString
+    nextLoopStripeWidth:
+        mov al, [esi]
+        inc esi
+        cmp al, 48
+        jl endLoopStripeWidth
+        cmp al, 58
+        jl nextLoopStripeWidth
+    endLoopStripeWidth:
+        dec esi
+        xor al, al
+        mov [esi], al
+   
+    invoke atodw, addr inputString
+    mov stripeWidth, eax
+    invoke dwtoa, stripeWidth, addr inputString
+    invoke StrLen, addr inputString
+    mov tamanhoAux, eax
+    
+    invoke WriteConsole, outputHandle, addr msg, sizeof msg, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr inputString, tamanhoAux, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
+
+    invoke WriteConsole, outputHandle, addr messageStripeHeight, sizeof messageStripeHeight, addr consoleCount, NULL
+    invoke ReadConsole, inputHandle, addr inputString, sizeof inputString, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
+    mov esi, offset inputString
+    nextLoopStripeHeight:
+        mov al, [esi]
+        inc esi
+        cmp al, 48
+        jl endLoopStripeHeight
+        cmp al, 58
+        jl nextLoopStripeHeight
+    endLoopStripeHeight:
+        dec esi
+        xor al, al
+        mov [esi], al
+   
+    invoke atodw, addr inputString
+    mov stripeHeight, eax
+    invoke dwtoa, stripeHeight, addr inputString
     invoke StrLen, addr inputString
     mov tamanhoAux, eax
     
