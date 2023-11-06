@@ -8,11 +8,6 @@ include \masm32\include\kernel32.inc
 includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\masm32.lib
 
-; para usar macro do PRINTF *** APAGAR DEPOIS ***
-include \masm32\include\msvcrt.inc
-includelib \masm32\lib\msvcrt.lib
-include \masm32\macros\macros.asm
-
 .data
     newLine 				db 0Ah
     messageArquivoEntrada 	db "Qual o nome do arquivo principal?(max 15 caracteres): ", 0h
@@ -21,16 +16,18 @@ include \masm32\macros\macros.asm
     messageYCoordenate 		db "Digite a coordenada Y inicial para a censura: ", 0h
     messageStripeWidth 		db "Digite a largura da tarja: ", 0h
     messageStripeHeight 	db "Digite a altura da tarja: ", 0h
+    messageEnteredValue  	db "valor digitado eh: ", 0h  
+    messageImgWidthValue    db "A largura da imagem eh: ", 0h  
     
+    imgName 			    db 17 dup(0) ; nome da imagem no diretorio
+    newImgName 			    db 18 dup(0) ; nome da imagem a ser gerada
+
     xCoordenate 			dd 0 ; coordenada X para inicio da censura
     yCoordenate 			dd 0 ; coordenada Y para inicio da censura
     stripeWidth             dd 0 ; largura da censura
     stripeHeight            dd 0 ; altura da sengura
-
-    imgName 			    db 17 dup(0) ; nome da imagem no diretorio
-    newImgName 			    db 18 dup(0) ; nome da imagem a ser gerada
     
-    fileBuffer 			    dd 6480  dup(0)
+    fileBuffer 			    dd 6480  dup(0) ; buffer de leitura
 
     tamanhoAux 				dd 0
     firstHeaderSize         dd 18
@@ -50,11 +47,34 @@ include \masm32\macros\macros.asm
     consoleCount 			dd 0
     
     inputString 			db 12 dup(0)
-    
-    msg 					db "valor digitado eh: ", 0h  
-    imageWidthValuemsg		db "A largura da imagem eh: ", 0h  
 	
 .code
+
+makeStripe:
+    push ebp
+    mov ebp, esp
+
+    xor eax, eax
+    xor ecx, ecx
+
+    mov ecx, DWORD PTR [ebp+16] ; pixelArray
+    mov edx, DWORD PTR [ebp+12] ; pixelWidth
+    mov eax, DWORD PTR [ebp+8]  ; stripedWidth
+
+    mov esi, edx ; coordenada inicial da tarja em ESI
+    mov edi, esi
+    add edi, eax ; coordenada final da tarja em EDI
+
+    zero_loop:
+        mov byte ptr [ecx + esi], 0
+        inc esi
+
+        cmp esi, edi
+        jb zero_loop
+
+    mov esp, ebp
+	pop ebp
+	ret 12
 
 start:
     ;------------------------------------- pegando handles de IO
@@ -87,7 +107,7 @@ start:
     invoke StrLen, addr inputString
     mov tamanhoAux, eax
     
-    invoke WriteConsole, outputHandle, addr msg, sizeof msg, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr messageEnteredValue, sizeof messageEnteredValue, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr inputString, tamanhoAux, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
 	
@@ -113,7 +133,7 @@ start:
     invoke StrLen, addr inputString
     mov tamanhoAux, eax
     
-    invoke WriteConsole, outputHandle, addr msg, sizeof msg, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr messageEnteredValue, sizeof messageEnteredValue, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr inputString, tamanhoAux, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
 
@@ -141,7 +161,7 @@ start:
     invoke StrLen, addr inputString
     mov tamanhoAux, eax
     
-    invoke WriteConsole, outputHandle, addr msg, sizeof msg, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr messageEnteredValue, sizeof messageEnteredValue, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr inputString, tamanhoAux, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
 
@@ -167,7 +187,7 @@ start:
     invoke StrLen, addr inputString
     mov tamanhoAux, eax
     
-    invoke WriteConsole, outputHandle, addr msg, sizeof msg, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr messageEnteredValue, sizeof messageEnteredValue, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr inputString, tamanhoAux, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
     ;-------------------------------------
@@ -178,17 +198,17 @@ start:
     invoke ReadConsole, inputHandle, addr imgName, sizeof imgName, addr consoleCount, NULL
 	
 	mov esi, offset imgName ; Armazenar apontador da string em esi
-	proximo3:
+	nextLoopMainFile:
 	mov al, [esi] ; Mover caractere atual para al
 	inc esi ; Apontar para o proximo caractere
 	cmp al, 13 ; Verificar se eh o caractere ASCII CR - FINALIZAR
-	jne proximo3
+	jne nextLoopMainFile
 	dec esi ; Apontar para caractere anterior
 	xor al, al ; ASCII 0
 	mov [esi], al ; Inserir ASCII 0 no lugar do ASCII CR
 	
     invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
-    invoke WriteConsole, outputHandle, addr msg, sizeof msg, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr messageEnteredValue, sizeof messageEnteredValue, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr imgName, 11, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL 
 
@@ -198,16 +218,16 @@ start:
     invoke ReadConsole, inputHandle, addr newImgName, sizeof newImgName, addr consoleCount, NULL
 	
 	mov esi, offset newImgName ; Armazenar apontador da string em esi
-	proximo4:
+	nextLoopSecondFile:
 	mov al, [esi] ; Mover caractere atual para al
 	inc esi ; Apontar para o proximo caractere
 	cmp al, 13 ; Verificar se eh o caractere ASCII CR - FINALIZAR
-	jne proximo4
+	jne nextLoopSecondFile
 	dec esi ; Apontar para caractere anterior
 	xor al, al ; ASCII 0
 	mov [esi], al ; Inserir ASCII 0 no lugar do ASCII CR
 	
-    invoke WriteConsole, outputHandle, addr msg, sizeof msg, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr messageEnteredValue, sizeof messageEnteredValue, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr newImgName, 12, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL 
     ;-------------------------------------
@@ -233,7 +253,7 @@ start:
     invoke StrLen, addr inputString  
     mov tamanhoAux, eax
     
-    invoke WriteConsole, outputHandle, addr imageWidthValuemsg, sizeof imageWidthValuemsg, addr consoleCount, NULL
+    invoke WriteConsole, outputHandle, addr messageImgWidthValue, sizeof messageImgWidthValue, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr inputString  , tamanhoAux, addr consoleCount, NULL
     invoke WriteConsole, outputHandle, addr newLine, sizeof newLine, addr consoleCount, NULL
 
@@ -283,16 +303,10 @@ start:
         jmp linha_censurada
 
         linha_censurada:
-            mov esi, pixelWidth ; coordenada inicial da tarja em ESI
-            mov edi, esi
-            add edi, stripeWidth ; coordenada final da tarja em EDI
-
-            zero_loop:
-                mov byte ptr [fileBuffer + esi], 0
-                inc esi
-
-                cmp esi, edi
-                jbe zero_loop
+            push offset fileBuffer
+            push pixelWidth
+            push stripeWidth
+            call makeStripe
 
             invoke WriteFile, imgSaidaHandle, addr fileBuffer, imageWidth, addr consoleCount, NULL
             jnz ler_linha ; continua o loop se ecx não for zero
@@ -304,7 +318,6 @@ start:
             jnz ler_linha ; continua o loop se ecx não for zero
 
     fim_leitura:
-
 	;-------------------------------------
 	
     ;------------------------------------ fechando arquivos
